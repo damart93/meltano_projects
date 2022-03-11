@@ -1,0 +1,85 @@
+version: 1
+send_anonymous_usage_stats: false
+project_id: 9c6be16d-a5cd-44ac-af58-070163ae691a
+plugins:
+  extractors:
+  - name: tap-oracle
+    namespace: tap_oracle
+    pip_url: git+https://github.com/damart93/pipelinewise-tap-oracle
+    executable: tap-oracle
+    capabilities:
+    - catalog
+    - discover
+    settings:
+    - name: host
+    - name: port
+    - name: user
+    - name: password
+    - name: sid
+    - name: filter_schemas
+  - name: tap-oracle-local
+    namespace: tap-oracle-local
+    pip_url: "-e /iop_opt/meltano/pipelinewise-tap-oracle"
+    executable: tap-oracle
+    capabilities:
+    - catalog
+    - discover
+    settings:
+    - name: host
+    - name: port
+    - name: user
+    - name: password
+    - name: sid
+    - name: filter_schemas
+  loaders:
+  - name: target-snowflake
+    variant: transferwise
+    pip_url: pipelinewise-target-snowflake
+    settings:
+    - name: account
+    - name: dbname
+    - name: user
+    - name: warehouse
+    - name: schema
+    - name: role
+    - name: file_format
+  orchestrators:
+  - name: airflow
+    pip_url: apache-airflow==2.1.2 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.1.2/constraints-${MELTANO__PYTHON_VERSION}.txt
+  files:
+  - name: airflow
+    pip_url: git+https://github.com/damart93/files-airflow
+schedules:
+- name: oracle-to-snowflake
+  extractor: tap-oracle
+  loader: target-snowflake
+  transform: skip
+  interval: '@once'
+  start_date: 2022-03-04 12:51:08.751946
+- name: oracle-to-snowflake-hourly
+  extractor: tap-oracle
+  loader: target-snowflake
+  transform: skip
+  interval: '@hourly'
+  start_date: 2022-03-10 12:01:58.031735
+environments:
+- name: dev
+  config:
+    plugins:
+      extractors:
+      - name: tap-oracle
+        select:
+        - AAP_DRIVE-FACT_PRECIO_ART_COL.*
+        metadata:
+          AAP_DRIVE-FACT_PRECIO_ART_COL:
+            replication-method: FULL_TABLE
+      - name: tap-oracle-local
+        select:
+        - AAP_DRIVE-FACT_PRECIO_ART_COL.*
+        metadata:
+          AAP_DRIVE-FACT_PRECIO_ART_COL:
+            replication-method: FULL_TABLE
+      loaders:
+      - name: target-snowflake
+        config:
+          batch_size_rows: 1000

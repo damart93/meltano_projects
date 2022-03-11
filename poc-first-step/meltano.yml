@@ -1,0 +1,53 @@
+version: 1
+send_anonymous_usage_stats: false
+project_id: 58b7fb2c-53bf-48c7-af7c-e439654eeb4a
+plugins:
+  extractors:
+  - name: tap-oracle
+    namespace: tap_oracle
+    pip_url: git+https://github.com/damart93/pipelinewise-tap-oracle
+    executable: tap-oracle
+    capabilities:
+    - catalog
+    - discover
+    settings:
+    - name: host
+    - name: port
+    - name: user
+    - name: password
+    - name: sid
+    - name: filter_schemas
+  loaders:
+  - name: target-csv
+    variant: hotgluexyz
+    pip_url: git+https://github.com/hotgluexyz/target-csv.git@0.3.3
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
+  - name: target-parquet
+    namespace: target_parquet
+    pip_url: git+https://github.com/estrategiahq/target-parquet.git
+    executable: target-parquet
+environments:
+- name: dev
+  config:
+    plugins:
+      extractors:
+      - name: tap-oracle
+        select:
+        - AAP_DRIVE-FACT_PRECIO_ART_COL.*
+        metadata:
+          AAP_DRIVE-FACT_PRECIO_ART_COL:
+            replication-method: FULL_TABLE
+      loaders:
+      - name: target-csv
+        config:
+          destination_path: /iop_data/meltano/output
+      - name: target-jsonl
+        config:
+          destination_path: /iop_data/meltano/output
+          do_timestamp_file: true
+      - name: target-parquet
+        config:
+          destination_path: /iop_data/meltano/output
+
